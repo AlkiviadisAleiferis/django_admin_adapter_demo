@@ -44,6 +44,10 @@ Run `ssh-keygen` and follow instructions (dont change directory and probably don
 ### Disable root access
 
 
+----------------------------------------------------------
+### change ssh port
+
+
 
 ----------------------------------------------------------
 ### Install proper docker version and document it
@@ -117,9 +121,9 @@ mkdir -p data/redis
 `cd ./docker/production/nginx`
 
 `
-sudo chown salpix nginx-selfsigned.crt && sudo chmod 600 salpix nginx-selfsigned.crt && \
-sudo chown salpix nginx-selfsigned.key && sudo chmod 600 salpix nginx-selfsigned.key && \
-sudo chown salpix dhparam.pem && sudo chmod 600 salpix dhparam.pem
+sudo chown username nginx-selfsigned.crt && sudo chmod 600 username nginx-selfsigned.crt && \
+sudo chown username nginx-selfsigned.key && sudo chmod 600 username nginx-selfsigned.key && \
+sudo chown username dhparam.pem && sudo chmod 600 username dhparam.pem
 `
 
 
@@ -136,56 +140,13 @@ create redis.conf
 `printf "user asset_manage_admin on >${redis_pass}"' ~* &* +@all'"\nuser default on >${redis_pass}\nappendonly yes\ndbfilename REDIS_DB_FILE.rdb" > redis.conf`
 `sudo chown root redis.conf`
 
-`scp ./.env salpix@${SERVER_IP}:/opt/asset_manage`
+`scp ./.env username@${SERVER_IP}:/opt/asset_manage`
 
 
 
 ----------------------------------------------------------
-### build services with no cache
+### initialize db --> create superusers/groups/permissions
 
+run while containers are up:
 
-
-----------------------------------------------------------
-### Up containers
-
-
-
-----------------------------------------------------------
-### install fixtures common: country,city,bank. issues:labels, chatgen:document_type and create superuser
-`docker compose exec infosys python3 manage.py loaddata backend/fixtures/common/country.json`
-`docker compose exec infosys python3 manage.py loaddata backend/fixtures/common/city.json`
-`docker compose exec infosys python3 manage.py loaddata backend/fixtures/common/bank.json`
-`docker compose exec infosys python3 manage.py loaddata backend/fixtures/chatgen/document_type.json`
-`docker compose exec infosys python3 manage.py install_administration_permissions`
-
-
-
-----------------------------------------------------------
-### create superusers/groups/permissions
-
-
-----------------------------------------------------------
-### Set up cron job for db dump
-cron job for data dump:
-min hr months days weekdays command
-dev:
-`30 22 1-31 1-12 0-6 cd /home/alkis/PROJECTS/salpix/salpix && docker compose exec db pg_dump -U asset_manage_admin -d salpix_asset_manage -f /opt/PGDUMP2.sql`
-prod:
-`00 00 1-31 1-12 0-6 cd /opt/asset_manage && docker compose exec db pg_dump -U asset_manage_admin -d salpix_asset_manage -f /opt/PGDUMP1.sql && docker compose exec db chown salpix /opt/PGDUMP1.sql`
-
-`00 12 1-31 1-12 0-6 cd /opt/asset_manage && docker compose exec db pg_dump -U asset_manage_admin -d salpix_asset_manage -f /opt/PGDUMP2.sql && docker compose exec db chown salpix /opt/PGDUMP2.sql`
-
-backup dump file locally:
-`scp salpix@${SERVER_IP}:/opt/asset_manage/data/db/dumps/PGDUMP.sql ~/salpix/db_dumps`
-
-
-
-----------------------------------------------------------
-#### set up VM's ENV vars
-set up /opt/.profile
-```
-export PROJECT_HOST_BASE_DIR='/opr/asset_manage'
-export DROPBOX_REFRESH_TOKEN='redresh_token'
-export DROPBOX_APP_KEY='app_key'
-export DROPBOX_APP_SECRET='app_secret'
-```
+`docker compose exec admin_api python3 manage.py init_db`
