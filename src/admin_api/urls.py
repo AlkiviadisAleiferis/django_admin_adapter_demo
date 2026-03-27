@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django_admin_adapter.adapter import AdminAPIAdapter
@@ -101,5 +100,5 @@ urlpatterns = [
     path("api/", include(admin_adapter.get_urls())),
 ]
 
-if settings.DEBUG:
-    urlpatterns.insert(0, path("profiling/", include("silk.urls", namespace="silk")))
+# if settings.DEBUG:
+#     urlpatterns.insert(0, path("profiling/", include("silk.urls", namespace="silk")))
