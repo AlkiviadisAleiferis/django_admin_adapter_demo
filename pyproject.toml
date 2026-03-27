@@ -1,0 +1,17 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "Django Admin Adapter Demo"
+version = "0.1.0"
+description = ""
+package-mode = false
+authors = ["Alkiviadis Aleiferis <alkiviadis.aliferis@gmail.com>"]
+
+[tool.ruff]
+lint.select = ["F", "E", "W", "I"]
+lint.ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"settings.py" = ["F405", "E402"]

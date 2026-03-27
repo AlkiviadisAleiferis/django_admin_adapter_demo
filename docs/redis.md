@@ -1,0 +1,12 @@
+This value is not namespaced and so must be set on the host as the container cannot set it.
+
+```
+echo "vm.overcommit_memory=1" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+cat /proc/sys/vm/overcommit_memory
+```
+
+
+before starting the container make sure:
+- the data/redis directory exissts with owner salpix and 775 mod
+- the data/redis/appendonlydir exists with salpix owner and 775 mod

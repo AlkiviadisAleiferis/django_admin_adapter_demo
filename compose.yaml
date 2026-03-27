@@ -1,0 +1,150 @@
+services:
+
+  db:
+    restart: always
+    env_file: ./.env
+    image: postgres:16.4-bookworm
+    environment:
+      HOSTNAME: "postgre"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: ${PGDATA}
+    volumes:
+      - ./data/db/postgredata:${PGDATA}
+      - ./data/db/dumps:${DUMP_DIR}
+    expose:
+      - ${DB_PORT}
+    networks:
+      common:
+        ipv4_address: ${DB_IP}
+
+  redis:
+    restart: always
+    env_file: ./.env
+    build:
+      context: ./
+      dockerfile: ./docker/redis/Dockerfile
+      args:
+        BUILD_TARGET: ${BUILD_TARGET}
+        DOCKER_USER: ${DOCKER_USER}
+        DOCKER_USER_ID: ${DOCKER_USER_ID}
+        REDIS_PORT: ${REDIS_PORT}
+        REDIS_DATABASES: 1
+        REDIS_AOF_ENABLED: yes
+    environment:
+      HOSTNAME: "redis"
+    volumes:
+      - ./data/redis:/data
+    command: redis-server /data/redis.conf
+    expose:
+      - ${REDIS_PORT}
+    networks:
+      common:
+        ipv4_address: $REDIS_IP
+
+  nginx:
+    restart: always
+    env_file: ./.env
+    user: ${DOCKER_USER}
+    build:
+      context: ./
+      dockerfile: ./docker/nginx/Dockerfile
+      args:
+        BUILD_TARGET: ${BUILD_TARGET}
+        DOCKER_USER: ${DOCKER_USER}
+        DOCKER_USER_ID: ${DOCKER_USER_ID}
+        ADMIN_API_STATIC_ROOT: ${ADMIN_API_STATIC_ROOT}
+        ADMIN_API_MEDIA_ROOT: ${ADMIN_API_MEDIA_ROOT}
+    environment:
+      HOSTNAME: "nginx"
+    volumes:
+      # MEDIA FILES
+      - ./data/admin_api/media:${ADMIN_API_MEDIA_ROOT}
+      # STATIC FILES
+      - ./data/admin_api/static:${ADMIN_API_STATIC_ROOT}
+      # LOGGING
+      - ./data/logging/nginx:/var/log/nginx
+      # OPERATIONAL FILES
+      - ./docker/nginx/nginx:/etc/logrotate.d/nginx
+      - ./docker/nginx/ssl-params.conf:/etc/nginx/snippets/ssl-params.conf
+      - ./docker/nginx/${BUILD_TARGET}/nginx.conf:/etc/nginx/nginx.conf
+      # FRONTEND
+      - ./src/frontend:/var/www/html/frontend
+    depends_on:
+      - admin_api
+    ports:
+      # frontend port
+      - "80:80"
+      - "443:443"
+      # api port
+      - "8888:8888"
+    networks:
+      common:
+        ipv4_address: ${NGINX_IP}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50k"
+        max-file: 3
+        env: "HOSTNAME"
+
+  admin_api:
+    restart: always
+    env_file: ./.env
+    user: ${DOCKER_USER}
+    build:
+      context: ./
+      dockerfile: ./docker/admin_api/Dockerfile
+      args:
+        BUILD_TARGET: ${BUILD_TARGET}
+        DOCKER_USER: ${DOCKER_USER}
+        DOCKER_USER_ID: ${DOCKER_USER_ID}
+        PROJECT_NAME: ${PROJECT_NAME}
+        PROJECT_BASE_DIR: ${PROJECT_BASE_DIR}
+        ADMIN_API_CACHE_DIR: ${ADMIN_API_CACHE_DIR}
+        BACKEND_BASE_DIR: ${BACKEND_BASE_DIR}
+        ADMIN_API_BASE_DIR: ${ADMIN_API_BASE_DIR}
+        ADMIN_API_STATIC_ROOT: ${ADMIN_API_STATIC_ROOT}
+        ADMIN_API_MEDIA_ROOT: ${ADMIN_API_MEDIA_ROOT}
+    environment:
+      HOSTNAME: admin_api
+    # POSTGRES DB CREDS
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # REDIS CREDS
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_USER: ${REDIS_USER}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      # WARNING: MUST create paths before running `compose up`
+      # STATIC FILES
+      - ./data/admin_api/static:${ADMIN_API_STATIC_ROOT}
+      # MEDIA FILES
+      - ./data/admin_api/media:${ADMIN_API_MEDIA_ROOT}
+      # PROJECT DIRS
+      - ./src/backend:${BACKEND_BASE_DIR}
+      - ./src/admin_api:${ADMIN_API_BASE_DIR}
+      # PROJECT FILES
+      - ./docker/backend/settings.py:${BACKEND_BASE_DIR}/settings.py
+      - ./docker/admin_api/settings.py:${PROJECT_BASE_DIR}/settings.py
+      - ./docker/admin_api/wsgi.py:${PROJECT_BASE_DIR}/wsgi.py
+      - ./docker/admin_api/entrypoint-${BUILD_TARGET}.sh:${PROJECT_BASE_DIR}/entrypoint-${BUILD_TARGET}.sh
+    expose:
+      - ${ADMIN_API_PORT}
+    entrypoint: "${PROJECT_BASE_DIR}/entrypoint-${BUILD_TARGET}.sh"
+    command: "${PROJECT_BASE_DIR}/entrypoint-${BUILD_TARGET}.sh"
+    depends_on:
+      - db
+      - redis
+    networks:
+      common:
+        ipv4_address: ${ADMIN_API_IP}
+
+networks:
+  common:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: $SUBNET
