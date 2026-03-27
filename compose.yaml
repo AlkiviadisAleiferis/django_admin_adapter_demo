@@ -36,6 +36,8 @@ services:
       HOSTNAME: "redis"
     volumes:
       - ./data/redis:/data
+      - ./data/redis/${BUILD_TARGET}/redis.conf:/data/redis.conf
+      - ./data/redis/${BUILD_TARGET}/users.acl:/data/users.acl
     command: redis-server /data/redis.conf
     expose:
       - ${REDIS_PORT}
