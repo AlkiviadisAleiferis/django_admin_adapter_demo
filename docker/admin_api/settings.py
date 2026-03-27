@@ -60,8 +60,8 @@ INTERNAL_IPS = [
 
 MIDDLEWARE.insert(0, "corsheaders.middleware.CorsMiddleware")
 
-if DEBUG:
-    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
+# if DEBUG:
+#     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 
 # --------------------------------------
 # INSTALLED_APPS
@@ -76,8 +76,8 @@ INSTALLED_APPS.extend(
     ]
 )
 
-if DEBUG:
-    INSTALLED_APPS = ["silk"] + INSTALLED_APPS
+# if DEBUG:
+#     INSTALLED_APPS = ["silk"] + INSTALLED_APPS
 
 ROOT_URLCONF = "admin_api.urls"
 WSGI_APPLICATION = "wsgi.application"
