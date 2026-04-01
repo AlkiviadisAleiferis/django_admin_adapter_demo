@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent  # PROJECT_NAME dir in /opt in contai
 sys.path.append(BASE_DIR)
 
 
-SECRET_KEY = "1234"
+SECRET_KEY = os.environ.get("ADMIN_API_SECRET_KEY", "1234")
 
 
 # % ------------------ import backend settings ------------------
