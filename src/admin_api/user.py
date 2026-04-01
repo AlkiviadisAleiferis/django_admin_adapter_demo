@@ -55,7 +55,6 @@ class UserAdmin(BaseUserAdmin, admin.ModelAdmin):
         "image",
         "is_active",
         "last_login",
-        "notifications",
     )
     readonly_fields = (
         "id",
