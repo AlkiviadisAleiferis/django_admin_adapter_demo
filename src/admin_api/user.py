@@ -110,8 +110,6 @@ class UserAdmin(BaseUserAdmin, admin.ModelAdmin):
             elif request.user.is_admin_or_management:
                 return self.readonly_fields + (
                     "username",
-                    "is_client",
-                    "is_agent",
                     "contact",
                 )
 
